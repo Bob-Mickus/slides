@@ -1,2 +1,4 @@
-# This repo contains the slide decks and any other supporting materials from the Denver Data Science Day speakers.
+#  Slide Decks 
+
+This repo contains the slide decks and any other supporting materials from the Denver Data Science Day speakers.
 
