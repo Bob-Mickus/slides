@@ -1,0 +1,210 @@
+---
+title: "An Overview of the Data Science Workflow using R"
+output:
+  html_notebook: default
+---
+
+# Talk Overview
+
+1. Introduction
+2. Overview of RStudio and R notebooks
+3. View functionality of Chicago crimes Shiny app
+4. Discussion of `tidyverse`, `ggplot2` and other libraries usage 
+within source code of app
+5. Review how Shiny apps work
+6. Questions
+
+# Introduction to R Notebooks
+
+This is an R Notebook. It is an upgrade to R Markdown for the following reasons:
+
+* It is interactive and can be knit to html.
+* Single code chunks can be ran one at a time, as well as in line code such as 2 + 2 = `r 2 + 2`. 
+* Results are shown without having to re-knit the entire document. 
+* Languages other than R can be used.
+
+```{python}
+def fib(n):
+  a, b = 0, 1
+  for _ in xrange(n):
+    yield a
+    a, b = b, a + b
+print list(fib(11))
+
+```
+
+# Workflow Overview
+
+## Load libraries, source functions
+
+Loading the `tidyverse` library loads the following packages:
+
+* ggplot2
+* dplyr
+* tidyr
+* readr
+* purrr
+* tibble
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(stringr)
+source("chicago_crime/source_functions.R")
+```
+
+## Read and prepare data
+
+The `readr` library can be useful for reading a variety of file formats and can be much faster than base R data reading functions. 
+
+```{r, eval=FALSE}
+crime_dat_raw <- readr::read_csv("chicago_crime.csv")
+crime_dat <- edit_raw_data(raw_data = crime_dat_raw)
+
+saveRDS(crime_dat, "chicago_crime/crime_dat_2016.RDS")
+```
+
+```{r}
+crime_dat <- readRDS("chicago_crime/crime_dat_2016.RDS")
+```
+
+
+## Manipulating data
+
+We can access a function stored in `source_functions` to cleanly filter the data based on user inputs. 
+
+```{r}
+crime_filter <- filter_crime_data(crime_dat = crime_dat, 
+                                  crime = "Burglary", 
+                                  start = "2016-01-01", 
+                                  end = "2016-02-01", 
+                                  group = "Description")
+```
+
+### dplyr
+
+#### Pipe operator: `%>%`
+
+The pipe operator (originally part of the `magrittr` library)  makes for very readable, smart code. 
+
+The pipe operator works by taking an object and piping it to the first argument of the next function. 
+
+##### Poem Example
+
+Below is an example from Hadley Wickham's example of the enhanced readability of code when using the pipe operator over standard base R functionality.
+
+> Little bunny Foo Foo
+Hopping through the forest
+Scooping up the field mice
+And bopping them on the head
+
+Using base R functionality:
+```{r, eval = FALSE}
+foo_foo <- little_bunny()
+bop_on(scoop_up(hop_through(foo_foo, forest), field_mouse), head)
+```
+
+Using tidyverse functionality:
+```{r, eval = FALSE}
+foo_foo %>%
+  hop_through(forest) %>%
+  scoop_up(field_mouse) %>%
+  bop_on(head)
+```
+
+#### Non-standard evaluation
+
+Non-standard evaluation is a unique syntactical feature within R that allows the program to use the name of an object in addition to its value. 
+
+Non-standard evaluation is used for three common purposes:
+
+1. Labelling -- uses the expressions rather than the values as labels
+2. Non-standard scoping -- looks for objects in a data frame or list before looking in the global environment
+3. Metaprogramming -- computing on unevaluated code
+
+
+```{r}
+num_seq <- 1:10
+num_seq_squared <- num_seq^2
+
+plot(num_seq, num_seq_squared)
+```
+
+## Visualizing data
+
+### ggplot2
+
+The `ggplot2` library is based on the "grammar of graphics", a system of generating graphs based on a few simple components:
+
+* a single or multiple data sets
+* geometries (geom) which are visual representations of data points with corresponding aesthetics (aes) such as x, y, size, color
+* a coordinate system
+
+Aesthetics are mapped from the data frame to the geom layer to create a simple plot that can be customized (scale, colors, window, theme, etc.) with additional elements. 
+
+#### Plot data preparation 
+
+```{r}
+crime_burg <- filter_crime_data(crime_dat = crime_dat, 
+                                     start = "2016-01-01", 
+                                     end = "2016-12-31", 
+                                     crime = "Burglary", 
+                                     group = "Description")
+
+barplot_data_list <- create_barplot_data(crime_filter = crime_burg, 
+                                    time_measure = "hour", 
+                                    north = 41.96766,
+                                    east = -87.37907,
+                                    south = 41.78872,
+                                    west = -87.88033)
+
+```
+
+Barplot using `ggplot2`:
+
+```{r}
+head(long_data)
+```
+
+
+```{r}
+plot_barplot_by_time_loc(barplot_data_list)
+```
+
+Using base R plotting functionality:
+
+```{r}
+head(barplot_data_list$table_data)
+```
+
+```{r}
+barplot(height = t(barplot_data_list$table_data), 
+        col = barplot_data_list$colors,
+        xlab = "Hour", ylab = "Total", 
+        legend = colnames(barplot_data_list$table_data))
+```
+
+## Interactive Shiny app
+
+Shiny is a library developed by RStudio to create easy, interactive web applications without the use of JavaScript. 
+
+A basic shiny app consists of:
+
+* A UI object
+* A server function
+
+```{r}
+options(shiny.reactlog = TRUE)
+shiny::showReactLog()
+```
+
+# References
+
+https://catalog.data.gov/dataset/crimes-2001-to-present-398a4
+
+http://adv-r.had.co.nz/Computing-on-the-language.html
+
+https://shiny.rstudio.com/articles/reactivity-overview.html 
+
+https://shiny.rstudio.com/reference/shiny/latest/showReactLog.html
+
